@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres-service:
+    hostname: postgres
+    image: postgres
+    container_name: postgres-container
+    networks:
+      - my_network
+    ports:
+      - '5435:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  ms-user-service:
+    hostname: ms-user
+    image: ms-user
+    container_name: ms-user-container
+    networks:
+      - my_network
+    ports:
+      - '8082:8082'
+    depends_on:
+      - postgres-service
+    environment:
+      DB_CONNECTION_USERNAME: postgres
+      DB_CONNECTION_PASSWORD: password
+      DB_CONNECTION_PORT: '5432'
+      DB_CONNECTION_IP: postgres-service
+
+  ms-order-service:
+    hostname: ms-order
+    image: ms-order
+    container_name: ms-order-container
+    networks:
+      - my_network
+    ports:
+      - '8081:8081'
+    depends_on:
+      - postgres-service
+    environment:
+      DB_CONNECTION_USERNAME: postgres
+      DB_CONNECTION_PASSWORD: password
+      DB_CONNECTION_PORT: '5432'
+      DB_CONNECTION_IP: postgres-service
+
+  nginx-service:
+    hostname: nginx
+    image: nginx
+    container_name: nginx-container
+    networks:
+      - my_network
+    ports:
+      - '8000:80'
+    depends_on:
+      - ms-order-service
+      - ms-user-service
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+
+volumes:
+  postgres_data: { }
+
+networks:
+  my_network: { }
